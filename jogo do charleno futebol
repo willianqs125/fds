@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Jogo de Futebol 11x11 com Goleiro e Reiniciar</title>
+<style>
+  body {
+    margin: 0;
+    background: #2e7d32;
+    font-family: sans-serif;
+    color: white;
+    text-align: center;
+    user-select: none;
+  }
+  #campo {
+    width: 1000px;
+    height: 600px;
+    background: #4caf50;
+    margin: 20px auto;
+    position: relative;
+    border: 5px solid white;
+    overflow: hidden;
+  }
+  .jogador {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    position: absolute;
+  }
+  .azul {
+    background: blue;
+  }
+  .vermelho {
+    background: red;
+  }
+  .controlavel {
+    border: 2px solid white;
+  }
+  .bola {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+  }
+  .gol {
+    width: 10px;
+    height: 150px;
+    background: yellow;
+    position: absolute;
+    top: 225px;
+    right: 0;
+  }
+  .goleiro {
+    width: 20px;
+    height: 50px;
+    background: black;
+    position: absolute;
+    right: 0;
+  }
+  #mensagem {
+    font-size: 22px;
+    margin-top: 10px;
+    height: 28px;
+  }
+  #placar {
+    font-size: 26px;
+    margin-top: 5px;
+    font-weight: bold;
+  }
+  #btnReiniciar {
+    margin-top: 15px;
+    padding: 8px 16px;
+    font-size: 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    background-color: #1565c0;
+    color: white;
+    transition: background-color 0.3s;
+  }
+  #btnReiniciar:hover {
+    background-color: #0d47a1;
+  }
+</style>
+</head>
+<body>
+
+<h1>Jogo de Futebol 11x11 com Goleiro e Reiniciar</h1>
+<div id="campo">
+  <div id="gol" class="gol"></div>
+  <div id="goleiro" class="goleiro"></div>
+  <div id="bola" class="bola"></div>
+</div>
+<div id="mensagem">Setas: mover | Espaço: chutar | P: passar</div>
+<div id="placar">Você: 0 | Adversário: 0</div>
+<button id="btnReiniciar">Reiniciar Jogo</button>
+
+<script>
+  const campo = document.getElementById('campo');
+  const bola = document.getElementById('bola');
+  const goleiro = document.getElementById('goleiro');
+  const gol = document.getElementById('gol');
+  const mensagem = document.getElementById('mensagem');
+  const placarEl = document.getElementById('placar');
+  const btnReiniciar = document.getElementById('btnReiniciar');
+
+  const jogadores = [];
+  const adversarios = [];
+
+  const jogadorPrincipal = document.createElement('div');
+  jogadorPrincipal.classList.add('jogador', 'azul', 'controlavel');
+  campo.appendChild(jogadorPrincipal);
+
+  let jogadorX = 100;
+  let jogadorY = 285;
+
+  let bolaX = jogadorX + 30;
+  let bolaY = jogadorY + 10;
+  let bolaChutada = false;
+  let bolaVelX = 0;
+  let bolaVelY = 0;
+
+  let goleiroY = 275;
+  let goleiroVel = 3;
+
+  let pontosJogador = 0;
+  let pontosAdversario = 0;
+
+  let bolaNoPasse = false;
+  let jogadorAlvoPasse = null;
+
+  function criarJogadores() {
+    // Apaga jogadores atuais se existirem
+    jogadores.forEach(j => campo.removeChild(j.el));
+    adversarios.forEach(a => campo.removeChild(a.el));
+    jogadores.length = 0;
+    adversarios.length = 0;
+
+    for (let i = 0; i < 10; i++) {
+      const azul = document.createElement('div');
+      azul.classList.add('jogador', 'azul');
+      azul.style.left = `${Math.random() * 400 + 50}px`;
+      azul.style.top = `${Math.random() * 550 + 20}px`;
+      campo.appendChild(azul);
+      jogadores.push({ el: azul, x: parseFloat(azul.style.left), y: parseFloat(azul.style.top) });
+    }
+    for (let i = 0; i < 11; i++) {
+      const vermelho = document.createElement('div');
+      vermelho.classList.add('jogador', 'vermelho');
+      vermelho.style.left = `${Math.random() * 400 + 550}px`;
+      vermelho.style.top = `${Math.random() * 550 + 20}px`;
+      campo.appendChild(vermelho);
+      adversarios.push({ el: vermelho, x: parseFloat(vermelho.style.left), y: parseFloat(vermelho.style.top) });
+    }
+  }
+  criarJogadores();
+
+  function companheiroMaisProximo() {
+    let maisProximo = null;
+    let menorDist = Infinity;
+    jogadores.forEach(j => {
+      const dx = (j.x + 15) - bolaX;
+      const dy = (j.y + 15) - bolaY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < menorDist) {
+        menorDist = dist;
+        maisProximo = j;
+      }
+    });
+    return maisProximo;
+  }
+
+  function fazerPasse() {
+    if (bolaChutada) return;
+    const alvo = companheiroMaisProximo();
+    if (!alvo) return;
+
+    bolaChutada = true;
+    bolaNoPasse = true;
+    jogadorAlvoPasse = alvo;
+
+    let dx = (alvo.x + 15) - bolaX;
+    let dy = (alvo.y + 15) - bolaY;
+
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const velocidadePasse = 10;
+
+    bolaVelX = (dx / dist) * velocidadePasse;
+    bolaVelY = (dy / dist) * velocidadePasse;
+  }
+
+  function chutarBola() {
+    if (bolaChutada) return;
+    bolaChutada = true;
+    bolaNoPasse = false;
+
+    bolaVelX = 15;
+    bolaVelY = -5;
+  }
+
+  let teclas = {};
+  window.addEventListener('keydown', e => {
+    teclas[e.key.toLowerCase()] = true;
+    if (e.key === ' ') {
+      e.preventDefault();
+      chutarBola();
+    }
+    if (e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      fazerPasse();
+    }
+  });
+  window.addEventListener('keyup', e => {
+    teclas[e.key.toLowerCase()] = false;
+  });
+
+  function moverJogador() {
+    if (teclas['arrowup']) jogadorY -= 5;
+    if (teclas['arrowdown']) jogadorY += 5;
+    if (teclas['arrowleft']) jogadorX -= 5;
+    if (teclas['arrowright']) jogadorX += 5;
+    if (jogadorX < 0) jogadorX = 0;
+    if (jogadorX > 970) jogadorX = 970;
+    if (jogadorY < 0) jogadorY = 0;
+    if (jogadorY > 570) jogadorY = 570;
+  }
+
+  function atualizar() {
+    moverJogador();
+    jogadorPrincipal.style.left = jogadorX + 'px';
+    jogadorPrincipal.style.top = jogadorY + 'px';
+
+    if (!bolaChutada) {
+      bolaX = jogadorX + 30;
+      bolaY = jogadorY + 10;
+    } else {
+      bolaX += bolaVelX;
+      bolaY += bolaVelY;
+      bolaVelY += 0.15;
+
+      if (bolaY > 580) {
+        bolaY = 580;
+        bolaVelY *= -0.6;
+        bolaVelX *= 0.7;
+        if (Math.abs(bolaVelY) < 1) bolaVelY = 0;
+        if (Math.abs(bolaVelX) < 0.5) bolaVelX = 0;
+      }
+      if (bolaX > 980) {
+        bolaX = 980;
+        bolaVelX *= -0.7;
+      }
+      if (bolaX < 0) {
+        bolaX = 0;
+        bolaVelX *= -0.7;
+      }
+      if (bolaY < 0) {
+        bolaY = 0;
+        bolaVelY *= -0.7;
+      }
+
+      if (bolaNoPasse && jogadorAlvoPasse) {
+        let dx = bolaX - jogadorAlvoPasse.x;
+        let dy = bolaY - jogadorAlvoPasse.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 5) {
+          const speed = 6;
+          jogadorAlvoPasse.x += (dx / dist) * speed;
+          jogadorAlvoPasse.y += (dy / dist) * speed;
+          jogadorAlvoPasse.el.style.left = jogadorAlvoPasse.x + 'px';
+          jogadorAlvoPasse.el.style.top = jogadorAlvoPasse.y + 'px';
+        } else {
+          bolaChutada = false;
+          bolaNoPasse = false;
+          jogadorX = jogadorAlvoPasse.x;
+          jogadorY = jogadorAlvoPasse.y;
+          jogadorAlvoPasse = null;
+        }
+      }
+    }
+
+    bola.style.left = bolaX + 'px';
+    bola.style.top = bolaY + 'px';
+
+    adversarios.forEach(a => {
+      let dx = jogadorX - a.x;
+      let dy = jogadorY - a.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 30) {
+        const speed = 2;
+        a.x += (dx / dist) * speed;
+        a.y += (dy / dist) * speed;
+        if (a.x < 0) a.x = 0;
+        if (a.x > 970) a.x = 970;
+        if (a.y < 0) a.y = 0;
+        if (a.y > 570) a.y = 570;
+        a.el.style.left = a.x + 'px';
+        a.el.style.top = a.y + 'px';
+      }
+    });
+
+    goleiroY += goleiroVel;
+    if (goleiroY > 525 || goleiroY < 225) goleiroVel *= -1;
+    goleiro.style.top = goleiroY + 'px';
+
+    checarGol();
+
+    requestAnimationFrame(atualizar);
+  }
+
+  function checarGol() {
+    const golX = 990;
+    if (bolaX + 20 >= golX) {
+      if (bolaY > 225 && bolaY < 375) {
+        if (bolaY + 20 >= goleiroY && bolaY <= goleiroY + 50) {
+          bolaVelX = -bolaVelX * 0.7;
+          bolaVelY = -bolaVelY * 0.7;
+          mensagem.textContent = "Defesa do goleiro!";
+        } else {
+          pontosJogador++;
+          placarEl.textContent = `Você: ${pontosJogador} | Adversário: ${pontosAdversario}`;
+          mensagem.textContent = "GOOOOL!!!";
+          resetarPosicoes();
+        }
+      }
+    }
+
+    if (bolaX <= 10) {
+      adversarios.forEach(a => {
+        let dx = bolaX - a.x;
+        let dy = bolaY - a.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 30) {
+          pontosAdversario++;
+          placarEl.textContent = `Você: ${pontosJogador} | Adversário: ${pontosAdversario}`;
+          mensagem.textContent = "Gol do adversário!";
+          resetarPosicoes();
+        }
+      });
+    }
+  }
+
+  function resetarPosicoes() {
+    jogadorX = 100;
+    jogadorY = 285;
+    bolaChutada = false;
+    bolaNoPasse = false;
+    jogadorAlvoPasse = null;
+    bolaX = jogadorX + 30;
+    bolaY = jogadorY + 10;
+
+    jogadores.forEach(j => {
+      j.x = Math.random() * 400 + 50;
+      j.y = Math.random() * 550 + 20;
+      j.el.style.left = j.x + 'px';
+      j.el.style.top = j.y + 'px';
+    });
+    adversarios.forEach(a => {
+      a.x = Math.random() * 400 + 550;
+      a.y = Math.random() * 550 + 20;
+      a.el.style.left = a.x + 'px';
+      a.el.style.top = a.y + 'px';
+    });
+
+    mensagem.textContent = "Use as setas para mover | Espaço para chutar | P para passar";
+  }
+
+  function reiniciarJogo() {
+    pontosJogador = 0;
+    pontosAdversario = 0;
+    placarEl.textContent = `Você: ${pontosJogador} | Adversário: ${pontosAdversario}`;
+    resetarPosicoes();
+    mensagem.textContent = "Jogo reiniciado! Use as setas para jogar.";
+  }
+
+  btnReiniciar.addEventListener('click', reiniciarJogo);
+
+  atualizar();
+</script>
+
+</body>
+</html>
