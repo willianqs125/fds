@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Futebol 1x1</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .character-select, .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 900px;
+        }
+
+        .character-select h1 {
+            color: white;
+            font-size: 32px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .character-selection {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            gap: 40px;
+            margin: 30px 0;
+        }
+
+        .player-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .player-section h2 {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .characters-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .character-option {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .character-option:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
+        .character-option.selected {
+            border-color: #FFD700;
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .character-name {
+            color: white;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .start-game-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .start-game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .start-game-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .score {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+        }
+
+        .player-score {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-indicator {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .timer {
+            color: #FFD700;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        #gameCanvas {
+            border: 3px solid white;
+            border-radius: 10px;
+            background: #228B22;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            color: white;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .restart-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+
+        .restart-btn:hover {
+            background: #45a049;
+        }
+
+        .winner {
+            color: #FFD700;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Tela de Seleção de Personagens -->
+    <div class="character-select" id="characterSelect">
+        <h1>⚽ Escolha os Jogadores ⚽</h1>
+        
+        <div class="character-selection">
+            <div class="player-section">
+                <h2>Seu Personagem</h2>
+                <div class="characters-grid" id="playerCharacters">
+                    <!-- Personagens serão inseridos aqui -->
+                </div>
+                <div class="character-name" id="playerCharacterName">Selecione um personagem</div>
+            </div>
+
+            <div class="player-section">
+                <h2>Adversário IA</h2>
+                <div class="characters-grid" id="aiCharacters">
+                    <!-- Personagens serão inseridos aqui -->
+                </div>
+                <div class="character-name" id="aiCharacterName">Selecione um adversário</div>
+            </div>
+        </div>
+
+        <button class="start-game-btn" id="startGameBtn" disabled onclick="startGame()">
+            Começar Partida
+        </button>
+    </div>
+
+    <!-- Tela do Jogo -->
+    <div class="game-container hidden" id="gameContainer">
+        <div class="score">
+            <div class="player-score">
+                <div class="player-indicator" id="playerIndicator"></div>
+                <span>Você: <span id="playerScore">0</span></span>
+            </div>
+            <div class="player-score">
+                <span>IA: <span id="aiScore">0</span></span>
+                <div class="player-indicator" id="aiIndicator"></div>
+            </div>
+        </div>
+        <div class="timer">Tempo: <span id="timer">90</span>s</div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div class="controls">
+            <p>Use as setas ou WASD para mover • ESPAÇO para chutar</p>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <div class="winner" id="winner"></div>
+        <p>Placar Final: <span id="finalPlayerScore">0</span> x <span id="finalAiScore">0</span></p>
+        <button class="restart-btn" onclick="restartGame()">Jogar Novamente</button>
+    </div>
+
+    <script>
+        // Personagens disponíveis
+        const characters = [
+            { id: 'player1', name: 'Atacante', color: '#FF6B6B', emoji: '⚡' },
+            { id: 'player2', name: 'Defensor', color: '#4ECDC4', emoji: '🛡️' },
+            { id: 'player3', name: 'Capitão', color: '#45B7D1', emoji: '👑' },
+            { id: 'player4', name: 'Velocista', color: '#96CEB4', emoji: '💨' },
+            { id: 'player5', name: 'Artilheiro', color: '#FFEAA7', emoji: '🎯' },
+            { id: 'player6', name: 'Goleiro', color: '#DDA0DD', emoji: '🥅' },
+            { id: 'player7', name: 'Mágico', color: '#FF7675', emoji: '✨' },
+            { id: 'player8', name: 'Robô', color: '#A29BFE', emoji: '🤖' },
+            { id: 'player9', name: 'Ninja', color: '#6C5CE7', emoji: '🥷' }
+        ];
+
+        let selectedPlayer = null;
+        let selectedAI = null;
+        let gameState = null;
+
+        // Elementos DOM
+        const characterSelectScreen = document.getElementById('characterSelect');
+        const gameScreen = document.getElementById('gameContainer');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const playerCharacterName = document.getElementById('playerCharacterName');
+        const aiCharacterName = document.getElementById('aiCharacterName');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function initCharacterSelect() {
+            const playerGrid = document.getElementById('playerCharacters');
+            const aiGrid = document.getElementById('aiCharacters');
+
+            characters.forEach(char => {
+                // Personagem para o jogador
+                const playerChar = createCharacterElement(char, 'player');
+                playerGrid.appendChild(playerChar);
+
+                // Personagem para a IA
+                const aiChar = createCharacterElement(char, 'ai');
+                aiGrid.appendChild(aiChar);
+            });
+        }
+
+        function createCharacterElement(character, type) {
+            const div = document.createElement('div');
+            div.className = 'character-option';
+            div.style.backgroundColor = character.color;
+            div.innerHTML = character.emoji;
+            div.onclick = () => selectCharacter(character, type, div);
+            div.title = character.name;
+            return div;
+        }
+
+        function selectCharacter(character, type, element) {
+            if (type === 'player') {
+                // Remove seleção anterior
+                document.querySelectorAll('#playerCharacters .character-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                
+                selectedPlayer = character;
+                element.classList.add('selected');
+                playerCharacterName.textContent = character.name;
+            } else {
+                // Remove seleção anterior
+                document.querySelectorAll('#aiCharacters .character-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                
+                selectedAI = character;
+                element.classList.add('selected');
+                aiCharacterName.textContent = character.name;
+            }
+
+            // Habilita botão se ambos estiverem selecionados
+            startGameBtn.disabled = !(selectedPlayer && selectedAI);
+        }
+
+        function startGame() {
+            // Esconde tela de seleção e mostra jogo
+            characterSelectScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            // Atualiza indicadores visuais
+            const playerIndicator = document.getElementById('playerIndicator');
+            const aiIndicator = document.getElementById('aiIndicator');
+            
+            playerIndicator.style.backgroundColor = selectedPlayer.color;
+            playerIndicator.innerHTML = selectedPlayer.emoji;
+            aiIndicator.style.backgroundColor = selectedAI.color;
+            aiIndicator.innerHTML = selectedAI.emoji;
+
+            // Inicializa o jogo
+            initGame();
+        }
+
+        function initGame() {
+            gameState = {
+                player: { 
+                    x: 400, 
+                    y: 500, 
+                    size: 20, 
+                    color: selectedPlayer.color,
+                    emoji: selectedPlayer.emoji,
+                    name: selectedPlayer.name
+                },
+                ai: { 
+                    x: 400, 
+                    y: 100, 
+                    size: 20, 
+                    color: selectedAI.color,
+                    emoji: selectedAI.emoji,
+                    name: selectedAI.name
+                },
+                ball: { x: 400, y: 300, size: 15, vx: 0, vy: 0, color: '#FFFFFF' },
+                playerGoal: { x: 350, y: 550, width: 100, height: 50 },
+                aiGoal: { x: 350, y: 0, width: 100, height: 50 },
+                playerScore: 0,
+                aiScore: 0,
+                timeLeft: 90,
+                gameRunning: true,
+                keys: {},
+                aiTarget: { x: 400, y: 300 },
+                aiLastKick: 0
+            };
+
+            // Reset UI
+            document.getElementById('playerScore').textContent = '0';
+            document.getElementById('aiScore').textContent = '0';
+            document.getElementById('timer').textContent = '90';
+
+            // Inicia o loop do jogo
+            gameLoop();
+        }
+
+        // Controles
+        document.addEventListener('keydown', (e) => {
+            if (gameState) gameState.keys[e.code] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (gameState) gameState.keys[e.code] = false;
+        });
+
+        function updatePlayer() {
+            const speed = 4;
+            
+            if (gameState.keys['ArrowUp'] || gameState.keys['KeyW']) {
+                gameState.player.y -= speed;
+            }
+            if (gameState.keys['ArrowDown'] || gameState.keys['KeyS']) {
+                gameState.player.y += speed;
+            }
+            if (gameState.keys['ArrowLeft'] || gameState.keys['KeyA']) {
+                gameState.player.x -= speed;
+            }
+            if (gameState.keys['ArrowRight'] || gameState.keys['KeyD']) {
+                gameState.player.x += speed;
+            }
+
+            // Manter jogador dentro do campo
+            gameState.player.x = Math.max(gameState.player.size, Math.min(canvas.width - gameState.player.size, gameState.player.x));
+            gameState.player.y = Math.max(gameState.player.size, Math.min(canvas.height - gameState.player.size, gameState.player.y));
+        }
+
+        function updateAI() {
+            const aiSpeed = 3;
+            gameState.aiLastKick++;
+
+            // IA persegue a bola
+            const ballDx = gameState.ball.x - gameState.ai.x;
+            const ballDy = gameState.ball.y - gameState.ai.y;
+            const ballDistance = Math.sqrt(ballDx * ballDx + ballDy * ballDy);
+
+            // Se a bola está na metade superior do campo, IA vai atrás dela
+            if (gameState.ball.y < canvas.height / 2 + 50) {
+                gameState.aiTarget.x = gameState.ball.x;
+                gameState.aiTarget.y = gameState.ball.y;
+            } else {
+                // Senão, fica defendendo o gol
+                gameState.aiTarget.x = gameState.aiGoal.x + gameState.aiGoal.width / 2;
+                gameState.aiTarget.y = gameState.aiGoal.y + 80;
+            }
+
+            // Movimento da IA
+            const targetDx = gameState.aiTarget.x - gameState.ai.x;
+            const targetDy = gameState.aiTarget.y - gameState.ai.y;
+            const targetDistance = Math.sqrt(targetDx * targetDx + targetDy * targetDy);
+
+            if (targetDistance > 5) {
+                gameState.ai.x += (targetDx / targetDistance) * aiSpeed;
+                gameState.ai.y += (targetDy / targetDistance) * aiSpeed;
+            }
+
+            // Manter IA dentro do campo
+            gameState.ai.x = Math.max(gameState.ai.size, Math.min(canvas.width - gameState.ai.size, gameState.ai.x));
+            gameState.ai.y = Math.max(gameState.ai.size, Math.min(canvas.height - gameState.ai.size, gameState.ai.y));
+
+            // IA chuta a bola
+            if (ballDistance < 35 && gameState.aiLastKick > 30) {
+                const kickPower = 6;
+                // Mira no gol do jogador
+                const goalCenterX = gameState.playerGoal.x + gameState.playerGoal.width / 2;
+                const goalCenterY = gameState.playerGoal.y + gameState.playerGoal.height / 2;
+                
+                const kickDx = goalCenterX - gameState.ball.x;
+                const kickDy = goalCenterY - gameState.ball.y;
+                const kickDistance = Math.sqrt(kickDx * kickDx + kickDy * kickDy);
+
+                gameState.ball.vx += (kickDx / kickDistance) * kickPower;
+                gameState.ball.vy += (kickDy / kickDistance) * kickPower;
+                gameState.aiLastKick = 0;
+            }
+        }
+
+        function kickBall() {
+            if (gameState.keys['Space']) {
+                const dx = gameState.ball.x - gameState.player.x;
+                const dy = gameState.ball.y - gameState.player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 40) {
+                    const power = 8;
+                    gameState.ball.vx = (dx / distance) * power;
+                    gameState.ball.vy = (dy / distance) * power;
+                }
+            }
+        }
+
+        function updateBall() {
+            gameState.ball.x += gameState.ball.vx;
+            gameState.ball.y += gameState.ball.vy;
+
+            // Atrito
+            gameState.ball.vx *= 0.98;
+            gameState.ball.vy *= 0.98;
+
+            // Colisões com as bordas laterais
+            if (gameState.ball.x <= gameState.ball.size || gameState.ball.x >= canvas.width - gameState.ball.size) {
+                gameState.ball.vx *= -0.7;
+                gameState.ball.x = Math.max(gameState.ball.size, Math.min(canvas.width - gameState.ball.size, gameState.ball.x));
+            }
+
+            // Verificar gol da IA (no topo)
+            if (gameState.ball.y <= gameState.aiGoal.height && 
+                gameState.ball.x > gameState.aiGoal.x && 
+                gameState.ball.x < gameState.aiGoal.x + gameState.aiGoal.width) {
+                
+                gameState.playerScore++;
+                document.getElementById('playerScore').textContent = gameState.playerScore;
+                resetBallPosition();
+            }
+            // Verificar gol do jogador (embaixo)
+            else if (gameState.ball.y >= gameState.playerGoal.y && 
+                     gameState.ball.x > gameState.playerGoal.x && 
+                     gameState.ball.x < gameState.playerGoal.x + gameState.playerGoal.width) {
+                
+                gameState.aiScore++;
+                document.getElementById('aiScore').textContent = gameState.aiScore;
+                resetBallPosition();
+            }
+            // Colisões com as bordas superior e inferior (fora dos gols)
+            else if (gameState.ball.y <= gameState.ball.size || gameState.ball.y >= canvas.height - gameState.ball.size) {
+                gameState.ball.vy *= -0.7;
+                gameState.ball.y = Math.max(gameState.ball.size, Math.min(canvas.height - gameState.ball.size, gameState.ball.y));
+            }
+        }
+
+        function resetBallPosition() {
+            gameState.ball.x = 400;
+            gameState.ball.y = 300;
+            gameState.ball.vx = 0;
+            gameState.ball.vy = 0;
+            gameState.player.x = 400;
+            gameState.player.y = 500;
+            gameState.ai.x = 400;
+            gameState.ai.y = 100;
+        }
+
+        function drawField() {
+            // Campo
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Linhas do campo
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            
+            // Linha central
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+
+            // Círculo central
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 80, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Gol da IA (topo)
+            ctx.strokeStyle = gameState.ai.color;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(gameState.aiGoal.x, gameState.aiGoal.y, gameState.aiGoal.width, gameState.aiGoal.height);
+            
+            // Área do gol da IA
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(gameState.aiGoal.x - 30, gameState.aiGoal.y, gameState.aiGoal.width + 60, gameState.aiGoal.height + 40);
+
+            // Gol do jogador (base)
+            ctx.strokeStyle = gameState.player.color;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(gameState.playerGoal.x, gameState.playerGoal.y, gameState.playerGoal.width, gameState.playerGoal.height);
+            
+            // Área do gol do jogador
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(gameState.playerGoal.x - 30, gameState.playerGoal.y - 40, gameState.playerGoal.width + 60, gameState.playerGoal.height + 40);
+        }
+
+        function drawPlayer() {
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.arc(gameState.player.x + 2, gameState.player.y + 2, gameState.player.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Jogador
+            ctx.fillStyle = gameState.player.color;
+            ctx.beginPath();
+            ctx.arc(gameState.player.x, gameState.player.y, gameState.player.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Emoji do personagem
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#000';
+            ctx.fillText(gameState.player.emoji, gameState.player.x, gameState.player.y + 5);
+        }
+
+        function drawAI() {
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.arc(gameState.ai.x + 2, gameState.ai.y + 2, gameState.ai.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // IA
+            ctx.fillStyle = gameState.ai.color;
+            ctx.beginPath();
+            ctx.arc(gameState.ai.x, gameState.ai.y, gameState.ai.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Emoji do personagem
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#000';
+            ctx.fillText(gameState.ai.emoji, gameState.ai.x, gameState.ai.y + 5);
+        }
+
+        function drawBall() {
+            // Sombra da bola
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x + 2, gameState.ball.y + 2, gameState.ball.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bola
+            ctx.fillStyle = gameState.ball.color;
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Detalhes da bola
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function updateTimer() {
+            if (gameState && gameState.gameRunning) {
+                gameState.timeLeft -= 1/60;
+                document.getElementById('timer').textContent = Math.ceil(gameState.timeLeft);
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }
+        }
+
+        function endGame() {
+            gameState.gameRunning = false;
+            document.getElementById('finalPlayerScore').textContent = gameState.playerScore;
+            document.getElementById('finalAiScore').textContent = gameState.aiScore;
+            
+            const winnerElement = document.getElementById('winner');
+            if (gameState.playerScore > gameState.aiScore) {
+                winnerElement.innerHTML = `🏆 ${gameState.player.name} Venceu! 🏆`;
+                winnerElement.style.color = '#4CAF50';
+            } else if (gameState.aiScore > gameState.playerScore) {
+                winnerElement.innerHTML = `😔 ${gameState.ai.name} Venceu! 😔`;
+                winnerElement.style.color = '#F44336';
+            } else {
+                winnerElement.innerHTML = '🤝 Empate! 🤝';
+                winnerElement.style.color = '#FFD700';
+            }
+            
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            gameScreen.classList.add('hidden');
+            characterSelectScreen.classList.remove('hidden');
+            
+            // Reset seleções
+            selectedPlayer = null;
+            selectedAI = null;
+            startGameBtn.disabled = true;
+            playerCharacterName.textContent = 'Selecione um personagem';
+            aiCharacterName.textContent = 'Selecione um adversário';
+            
+            // Remove todas as seleções
+            document.querySelectorAll('.character-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+        }
+
+        function gameLoop() {
+            if (gameState && gameState.gameRunning) {
+                updatePlayer();
+                updateAI();
+                kickBall();
+                updateBall();
+                updateTimer();
+            }
+
+            if (gameState) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawField();
+                drawPlayer();
+                drawAI();
+                drawBall();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Inicializar quando a página carregar
+        window.onload = function() {
+            initCharacterSelect();
+        };
+    </script>
+</body>
+</html>
