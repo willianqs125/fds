@@ -1,0 +1,119 @@
+function updateAI() {
+  const ai = gameState.ai;
+  const player = gameState.player;
+  const ball = gameState.ball;
+  const aiSpeed = ai.speed;
+
+  gameState.aiLastKick++;
+
+  const dxBall = ball.x - ai.x;
+  const dyBall = ball.y - ai.y;
+  const distanceToBall = Math.sqrt(dxBall * dxBall + dyBall * dyBall);
+  const hasBall = distanceToBall < 35;
+
+  const goalX = gameState.playerGoal.x + gameState.playerGoal.width / 2;
+  const goalY = gameState.playerGoal.y + gameState.playerGoal.height / 2;
+
+  const playerHasBall = gameStats.lastPossessor === 'player';
+  const ballFree = gameStats.lastPossessor !== 'player' && gameStats.lastPossessor !== 'ai';
+
+  // IA COM A BOLA
+  if (hasBall) {
+    const dxGoal = goalX - ai.x;
+    const dyGoal = goalY - ai.y;
+    const distToGoal = Math.sqrt(dxGoal * dxGoal + dyGoal * dyGoal);
+
+    if (distToGoal > 60) {
+      // Conduz até o gol
+      ai.x += (dxGoal / distToGoal) * aiSpeed;
+      ai.y += (dyGoal / distToGoal) * aiSpeed;
+    } else {
+      // Está perto do gol — chuta
+      if (gameState.aiLastKick > 15) {
+        kickBall('ai');
+        gameState.aiLastKick = 0;
+      }
+    }
+
+  } else {
+    // IA SEM A BOLA
+    if (playerHasBall) {
+      // Vai marcar o jogador
+      const dx = player.x - ai.x;
+      const dy = player.y - ai.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist > 5) {
+        ai.x += (dx / dist) * aiSpeed;
+        ai.y += (dy / dist) * aiSpeed;
+      }
+
+    } else if (ballFree) {
+      // Vai até a bola se estiver livre
+      const dx = ball.x - ai.x;
+      const dy = ball.y - ai.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist > 5) {
+        ai.x += (dx / dist) * aiSpeed;
+        ai.y += (dy / dist) * aiSpeed;
+      }
+
+    } else {
+      // Posicionamento defensivo entre a bola e o gol
+      const defendX = (ball.x + gameState.aiGoal.x + gameState.aiGoal.width / 2) / 2;
+      const defendY = (ball.y + gameState.aiGoal.y + gameState.aiGoal.height / 2) / 2;
+
+      const dx = defendX - ai.x;
+      const dy = defendY - ai.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist > 5) {
+        ai.x += (dx / dist) * aiSpeed * 0.8;
+        ai.y += (dy / dist) * aiSpeed * 0.8;
+      }
+    }
+  }
+
+  // Evita sair do campo
+  ai.x = Math.min(canvas.width - ai.size, Math.max(ai.size, ai.x));
+  ai.y = Math.min(canvas.height - ai.size, Math.max(ai.size, ai.y));
+
+  // Atualiza posse de bola
+  if (hasBall && gameStats.lastPossessor !== 'ai') {
+    gameStats.lastPossessor = 'ai';
+  }
+}
+
+
+function kickBall(who) {
+  const ball = gameState.ball;
+
+  if (who === 'player') {
+    if (gameState.keys['Space']) {
+      const dx = ball.x - gameState.player.x;
+      const dy = ball.y - gameState.player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 45) {
+        const kickPower = 6 * gameState.player.power;
+        ball.vx = (dx / dist) * kickPower;
+        ball.vy = (dy / dist) * kickPower;
+        gameStats.playerShots++;
+        addParticles(ball.x, ball.y, '#ffff00');
+      }
+    }
+
+  } else if (who === 'ai') {
+    const goal = gameState.playerGoal;
+    const dx = goal.x + goal.width / 2 - ball.x;
+    const dy = goal.y + goal.height / 2 - ball.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const kickPower = 5 * gameState.ai.power;
+
+    ball.vx = (dx / dist) * kickPower + (Math.random() - 0.5) * 2;
+    ball.vy = (dy / dist) * kickPower + (Math.random() - 0.5) * 2;
+
+    addParticles(ball.x, ball.y, '#ff6666');
+  }
+}
